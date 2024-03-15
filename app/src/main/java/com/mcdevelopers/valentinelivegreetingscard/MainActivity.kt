@@ -103,7 +103,7 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlo
                 settings.domStorageEnabled = true
                 settings.setGeolocationEnabled(true)
                 this.addJavascriptInterface(WebAppInterface(this.context), "AndroidShare")
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
+                settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                 visibility = INVISIBLE
             }
         },
