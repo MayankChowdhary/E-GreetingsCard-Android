@@ -1,14 +1,20 @@
 package com.mcdevelopers.valentinelivegreetingscard
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.INVISIBLE
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.VISIBLE
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -22,12 +28,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat.startActivity
 import com.mcdevelopers.valentinelivegreetingscard.ui.theme.ValentineLiveGreetingCardTheme
 import com.mcdevelopers.valentinelivegreetingscard.utils.Constants
 import com.mcdevelopers.valentinelivegreetingscard.utils.toPx
 import kotlinx.coroutines.flow.MutableStateFlow
 import pl.droidsonroids.gif.GifImageView
+
 
 class MainActivity : ComponentActivity() {
         private val loaderStateFlow = MutableStateFlow(true)
@@ -64,7 +73,7 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
                     LayoutParams.MATCH_PARENT
                 )
                 this.webChromeClient = WebChromeClient()
-                this.webViewClient = buildWebViewClient(stateFlow = stateFlow)
+                this.webViewClient = buildWebViewClient(stateFlow = stateFlow, this.context)
                 this.requestFocus()
                 this.setBackgroundColor(android.graphics.Color.BLACK)
                 this.isSoundEffectsEnabled = true
@@ -75,6 +84,7 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
                 settings.allowContentAccess = true
                 settings.domStorageEnabled = true
                 settings.setGeolocationEnabled(true)
+               this.addJavascriptInterface(WebAppInterface(this.context), "Android")
                 settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                 visibility = INVISIBLE
             }
@@ -86,7 +96,7 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
     )
 }
 
-fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>):WebViewClient {
+fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>,context: Context):WebViewClient {
     val webViewClient = object : WebViewClient() {
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -99,6 +109,24 @@ fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>):WebViewClient {
             stateFlow.value = false
             view.visibility = VISIBLE
 
+        }
+
+        override fun shouldOverrideUrlLoading(
+            view: WebView?,
+            request: WebResourceRequest
+        ): Boolean {
+            Log.e("WebviewOverride", "shouldOverrideUrlLoading: "+request.url.toString() )
+            if (request.url.toString().contains(Constants.remoteUrl) && (!request.url.toString().contains("whatsapp://send"))) {
+                return super.shouldOverrideUrlLoading(view, request)
+            } else {
+                try {
+                    val browserIntent = Intent(Intent.ACTION_VIEW, request.url)
+                    startActivity(context,browserIntent,null)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return true
         }
     }
     return  webViewClient;
@@ -127,6 +155,19 @@ fun GifImageViewCompose(stateFlow: MutableStateFlow<Boolean>){
     )
 }
 
+class WebAppInterface(private val mContext: Context) {
+    @JavascriptInterface // <- this decorator is what exposes the method
+    fun nativeShare(title: String, text: String, url: String) {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TITLE, title)
+            putExtra(Intent.EXTRA_TEXT, "$text $url")
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, title)
+        startActivity(mContext, shareIntent, null)
+    }
+}
 
 /*
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_2")
