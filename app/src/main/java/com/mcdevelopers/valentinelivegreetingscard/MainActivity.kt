@@ -1,6 +1,7 @@
 package com.mcdevelopers.valentinelivegreetingscard
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -29,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat.startActivity
 import com.mcdevelopers.valentinelivegreetingscard.ui.theme.ValentineLiveGreetingCardTheme
@@ -40,7 +42,7 @@ import pl.droidsonroids.gif.GifImageView
 
 class MainActivity : ComponentActivity() {
     private val loaderStateFlow = MutableStateFlow(true)
-    private val killAllStateFlow = MutableStateFlow(false)
+    private val killAllStateFlow = MutableStateFlow<Boolean?>(null)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,8 +64,11 @@ class MainActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                killAllStateFlow.value = true;
-                finish()
+                if(killAllStateFlow.value!=null) {
+                    killAllStateFlow.value = !(killAllStateFlow.value as Boolean)
+                }else{
+                    killAllStateFlow.value=true
+                }
             }
         })
 
@@ -75,8 +80,9 @@ class MainActivity : ComponentActivity() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlow<Boolean> ) {
+fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlow<Boolean?> ) {
     val killer by killAll.collectAsState()
+    val activity = LocalContext.current as Activity
     AndroidView(
         factory = { context ->
             WebView(context).apply {
@@ -104,8 +110,13 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlo
         update = { webView ->
             // Update the Android View if needed
             webView.loadUrl(Constants.remoteUrl)
-            if(killer){
-                webView.destroy()
+            killer?.let {
+                if(webView.canGoBack()){
+                    webView.goBack()
+                }else{
+                    webView.destroy()
+                    activity.finish()
+                }
             }
         }
     )
