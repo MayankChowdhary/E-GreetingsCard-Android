@@ -17,7 +17,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,9 +30,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import pl.droidsonroids.gif.GifImageView
 
 class MainActivity : ComponentActivity() {
-    companion object{
-        val loaderStateFlow = MutableStateFlow(true)
-    }
+        private val loaderStateFlow = MutableStateFlow(true)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
