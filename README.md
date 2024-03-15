@@ -1,6 +1,7 @@
 # E-GreetingsCard
-Valentine's day live greetings card web application in php, html, javascript, css.
-Share this beautiful live greetings card to your loved ones.
+Valentine's day live greetings card, a web app inserted in android App.
+<br>In this android version Major components used:  Webview, Kotlin ,Jetpack Compose, MVVM.
+<br>Share this beautiful live greetings card to your loved ones.
 Demo Url is:
 https://mc-developers.infinityfreeapp.com/greetingscard/
 
