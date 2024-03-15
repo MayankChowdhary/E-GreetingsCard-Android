@@ -2,6 +2,6 @@ package com.mcdevelopers.valentinelivegreetingscard.utils
 
 class Constants {
     companion object{
-        val remoteUrl:String = "https://mc-developers.infinityfreeapp.com/greetingscard/"
+        const val remoteUrl:String = "http://mc-developers.infinityfreeapp.com/greetingscard/"
     }
 }
