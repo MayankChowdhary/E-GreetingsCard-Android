@@ -8,7 +8,6 @@ import android.net.http.SslError
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.view.ViewGroup.INVISIBLE
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.VISIBLE
@@ -19,8 +18,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
-import android.window.OnBackInvokedDispatcher
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
@@ -108,7 +105,6 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlo
             // Update the Android View if needed
             webView.loadUrl(Constants.remoteUrl)
             if(killer){
-                Toast.makeText(webView.context,"Kill All",Toast.LENGTH_LONG).show()
                 webView.destroy()
             }
         }
