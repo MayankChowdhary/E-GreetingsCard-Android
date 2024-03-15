@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.health.connect.datatypes.units.Length
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -18,6 +19,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -84,7 +86,8 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
                 settings.allowContentAccess = true
                 settings.domStorageEnabled = true
                 settings.setGeolocationEnabled(true)
-               this.addJavascriptInterface(WebAppInterface(this.context), "Android")
+                settings.pluginState = WebSettings.PluginState.ON
+               this.addJavascriptInterface(WebAppInterface(this.context), "AndroidShare")
                 settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                 visibility = INVISIBLE
             }
