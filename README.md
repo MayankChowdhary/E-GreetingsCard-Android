@@ -2,7 +2,7 @@
 Valentine's day live greetings card, a web app inserted in android App.
 <br>In this android version Major components used:  Webview, Kotlin ,Jetpack Compose, MVVM.
 <br>Share this beautiful live greetings card to your loved ones.
-Web Url is:
+<br> Web Url is:
 https://mc-developers.infinityfreeapp.com/greetingscard/
 
 <table style="width:100%">
