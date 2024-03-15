@@ -4,8 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.health.connect.datatypes.units.Length
-import android.net.Uri
+import android.net.http.SslError
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -14,13 +13,16 @@ import android.view.ViewGroup.INVISIBLE
 import android.view.ViewGroup.LayoutParams
 import android.view.ViewGroup.VISIBLE
 import android.webkit.JavascriptInterface
+import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import android.window.OnBackInvokedDispatcher
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +32,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat.startActivity
 import com.mcdevelopers.valentinelivegreetingscard.ui.theme.ValentineLiveGreetingCardTheme
@@ -41,7 +42,8 @@ import pl.droidsonroids.gif.GifImageView
 
 
 class MainActivity : ComponentActivity() {
-        private val loaderStateFlow = MutableStateFlow(true)
+    private val loaderStateFlow = MutableStateFlow(true)
+    private val killAllStateFlow = MutableStateFlow(false)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,24 +55,35 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = androidx.compose.ui.graphics.Color.Black
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
-                        WebViewCompose(loaderStateFlow)
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        WebViewCompose(loaderStateFlow,killAllStateFlow)
                         GifImageViewCompose(loaderStateFlow)
                     }
                 }
             }
         }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                killAllStateFlow.value = true;
+                finish()
+            }
+        })
+
     }
+
+
 }
 
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
+fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>,killAll: MutableStateFlow<Boolean> ) {
+    val killer by killAll.collectAsState()
     AndroidView(
         factory = { context ->
             WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
+                layoutParams = LayoutParams(
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT
                 )
@@ -86,20 +99,23 @@ fun WebViewCompose(stateFlow: MutableStateFlow<Boolean>){
                 settings.allowContentAccess = true
                 settings.domStorageEnabled = true
                 settings.setGeolocationEnabled(true)
-                settings.pluginState = WebSettings.PluginState.ON
-               this.addJavascriptInterface(WebAppInterface(this.context), "AndroidShare")
-                settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                this.addJavascriptInterface(WebAppInterface(this.context), "AndroidShare")
+                settings.cacheMode = WebSettings.LOAD_DEFAULT
                 visibility = INVISIBLE
             }
         },
         update = { webView ->
             // Update the Android View if needed
             webView.loadUrl(Constants.remoteUrl)
+            if(killer){
+                Toast.makeText(webView.context,"Kill All",Toast.LENGTH_LONG).show()
+                webView.destroy()
+            }
         }
     )
 }
 
-fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>,context: Context):WebViewClient {
+fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>, context: Context): WebViewClient {
     val webViewClient = object : WebViewClient() {
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -107,6 +123,7 @@ fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>,context: Context):We
             view.visibility = INVISIBLE
             stateFlow.value = true
         }
+
         override fun onPageFinished(view: WebView, url: String) {
             super.onPageFinished(view, url)
             stateFlow.value = false
@@ -118,27 +135,34 @@ fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>,context: Context):We
             view: WebView?,
             request: WebResourceRequest
         ): Boolean {
-            Log.e("WebviewOverride", "shouldOverrideUrlLoading: "+request.url.toString() )
-            if (request.url.toString().contains(Constants.remoteUrl) && (!request.url.toString().contains("whatsapp://send"))) {
+            Log.e("WebviewOverride", "shouldOverrideUrlLoading: " + request.url.toString())
+            if (request.url.toString().contains(Constants.remoteUrl) && (!request.url.toString()
+                    .contains("whatsapp://send"))
+            ) {
                 return super.shouldOverrideUrlLoading(view, request)
             } else {
                 try {
                     val browserIntent = Intent(Intent.ACTION_VIEW, request.url)
-                    startActivity(context,browserIntent,null)
+                    startActivity(context, browserIntent, null)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             return true
         }
+
+        @SuppressLint("WebViewClientOnReceivedSslError")
+        override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler, error: SslError) {
+            handler.proceed()
+            Log.d("ssl_error", error.toString())
+        }
     }
-    return  webViewClient;
+    return webViewClient;
 }
 
 @Composable
-fun GifImageViewCompose(stateFlow: MutableStateFlow<Boolean>){
+fun GifImageViewCompose(stateFlow: MutableStateFlow<Boolean>) {
     val visibility by stateFlow.collectAsState()
-
     AndroidView(
         factory = { context ->
             GifImageView(context).apply {
@@ -146,14 +170,14 @@ fun GifImageViewCompose(stateFlow: MutableStateFlow<Boolean>){
                     LayoutParams.WRAP_CONTENT,
                     LayoutParams.WRAP_CONTENT
                 ).apply {
-                    width=context.toPx(230)
+                    width = context.toPx(230)
                     height = LayoutParams.WRAP_CONTENT
                 }
             }
         },
         update = { view ->
             view.setImageResource(R.drawable.loading)
-            view.visibility = if(visibility) View.VISIBLE else View.GONE
+            view.visibility = if (visibility) View.VISIBLE else View.GONE
         }
     )
 }
