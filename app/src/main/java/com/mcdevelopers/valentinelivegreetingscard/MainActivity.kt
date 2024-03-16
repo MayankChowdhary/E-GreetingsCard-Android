@@ -143,10 +143,15 @@ fun buildWebViewClient(stateFlow: MutableStateFlow<Boolean>, context: Context): 
             request: WebResourceRequest
         ): Boolean {
             Log.e("WebviewOverride", "shouldOverrideUrlLoading: " + request.url.toString())
-            if (request.url.toString().contains(Constants.remoteUrl) && (!request.url.toString()
+            if (request.url.toString().contains(Constants.matchUrl) && (!request.url.toString()
                     .contains("whatsapp://send"))
+
             ) {
-                return super.shouldOverrideUrlLoading(view, request)
+                if(request.url.toString().contains(Constants.matchUrl2)){
+                    view?.loadUrl(Constants.remoteUrl)
+                }else {
+                    return super.shouldOverrideUrlLoading(view, request)
+                }
             } else {
                 try {
                     val browserIntent = Intent(Intent.ACTION_VIEW, request.url)
